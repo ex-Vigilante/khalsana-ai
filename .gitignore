@@ -1,0 +1,12 @@
+# Dependencies and build output
+node_modules
+.next
+
+# Env files (keep only the example)
+.env*
+!.env.example
+
+# Misc
+.vercel
+*.log
+.DS_Store
