@@ -42,6 +42,30 @@ export default function Home() {
         </ol>
       </section>
 
+      <section aria-labelledby="who-h" className="how">
+        <h2 id="who-h">مين بيشوف إيه؟</h2>
+        <ol className="how-steps">
+          <li className="card">
+            <div>
+              <h3>انت وفريقك</h3>
+              <p>خلّصانة شاشة الشغل بتاعتكم: الرسايل، الأوردرات، الردود وليبلات الشحن في مكان واحد.</p>
+            </div>
+          </li>
+          <li className="card">
+            <div>
+              <h3>زباينك</h3>
+              <p>بيكلموك على واتساب وماسنجر وإنستجرام عادي، ومش بيشوفوا خلّصانة خالص. اللي بيوصلهم رد سريع ومظبوط.</p>
+            </div>
+          </li>
+          <li className="card">
+            <div>
+              <h3>الرسايل بتدخل إزاي؟</h3>
+              <p>في النسخة دي بتنسخ الرسالة وتلصقها. وممكن تتربط مباشرة بواتساب بيزنس وماسنجر، فالرسايل تدخل لوحدها.</p>
+            </div>
+          </li>
+        </ol>
+      </section>
+
       <p className="home-links">
         <Link href="/dashboard">شوف أرقام المتجر</Link>
         <Link href="/orders">الأوردرات</Link>
