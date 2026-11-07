@@ -72,6 +72,7 @@ export default function Home() {
         <Link href="/try/dashboard">شوف أرقام المتجر (تجريبي)</Link>
         <Link href="/try/orders">الأوردرات (تجريبي)</Link>
         <Link href="/about">عن خلّصانة</Link>
+        <Link href="/privacy">سياسة الخصوصية</Link>
       </p>
     </div>
   );
