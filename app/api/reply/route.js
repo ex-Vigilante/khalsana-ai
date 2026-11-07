@@ -1,5 +1,6 @@
 import { bad, forbidden, getIp, rateLimited, readJson, sameOrigin, streamAI, tooMany } from "@/lib/server";
 import { MAX_MESSAGE, validateExtraction, validateStore } from "@/lib/order";
+import { getAccess, teamLimited } from "@/lib/auth";
 import { demoReply, replyFacts, replySystem, replyUser } from "@/lib/prompts";
 
 export const runtime = "nodejs";
@@ -9,7 +10,8 @@ export const maxDuration = 30;
 
 export async function POST(req) {
   if (!sameOrigin(req)) return forbidden();
-  if (rateLimited(getIp(req))) return tooMany();
+  const access = await getAccess();
+  if (access.state === "ok" ? teamLimited(access.email) : rateLimited(getIp(req))) return tooMany();
   const parsed = await readJson(req, 40_000);
   if (parsed.error) return bad(parsed.error);
   const b = parsed.value;

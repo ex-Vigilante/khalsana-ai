@@ -31,8 +31,54 @@ function ListInput({ id, label, value, onChange, max, len, hint }) {
   );
 }
 
+const INTEGRATION_ROWS = [
+  ["database", "قاعدة البيانات (Supabase)"],
+  ["whatsappReceive", "استقبال رسايل واتساب"],
+  ["whatsappSend", "الرد من واتساب مباشرة"],
+  ["ai", "الذكاء الاصطناعي (Groq)"],
+];
+
+// Which integrations are configured (yes/no only) and the webhook URL to paste into Meta.
+function Integrations({ integrations, status }) {
+  const [copied, setCopied] = useState(false);
+  if (!integrations) return null;
+  const url = status?.webhookUrl || "";
+  return (
+    <section className="card form-card" aria-labelledby="s-int">
+      <h2 id="s-int">الربط</h2>
+      <ul className="int-list">
+        {INTEGRATION_ROWS.map(([id, label]) => (
+          <li key={id}>
+            <span>{label}</span>
+            <span className={`badge ${integrations[id] ? "badge-ok" : "badge-warn"}`}>{integrations[id] ? "✓ شغّال" : "✗ مش متفعّل"}</span>
+          </li>
+        ))}
+      </ul>
+      {url && (
+        <>
+          <p className="hint">الرابط اللي تحطه في Meta (Callback URL) لاستقبال رسايل واتساب:</p>
+          <code className="code-line">{url}</code>
+          <button
+            type="button"
+            className="link-btn"
+            onClick={() => {
+              navigator.clipboard?.writeText(url).then(() => setCopied(true)).catch(() => {});
+              setTimeout(() => setCopied(false), 2000);
+            }}
+          >
+            {copied ? "اتنسخ ✓" : "انسخ الرابط"}
+          </button>
+          <p className="hint">الـ Verify Token هو نفس الكلمة السرية اللي حطيتها في إعدادات Vercel (مش بتظهر هنا). الخطوات في ملف SETUP.md.</p>
+        </>
+      )}
+    </section>
+  );
+}
+
 export default function SettingsView() {
-  const { ready, store, setStore, resetStore } = useApp();
+  const { ready, store, setStore, resetStore, mode, saveState, integrations, status, user } = useApp();
+  const prod = mode === "prod";
+  const readOnly = prod && user?.role !== "owner"; // only the owner edits settings
   if (!ready) return <p className="loading" role="status">بنحمّل الإعدادات…</p>;
 
   const check = validateStore(store);
@@ -50,9 +96,26 @@ export default function SettingsView() {
     <div className="page">
       <div className="page-head">
         <h1>الإعدادات</h1>
-        <p className="sub">كل تعديل بيتحفظ لوحده في متصفحك. بنبعت الإعدادات دي مع كل طلب AI عشان الاستخراج والردود تمشي على منتجاتك وأسعارك.</p>
+        <p className="sub">
+          {prod
+            ? "كل تعديل بيتحفظ لوحده في قاعدة بيانات المتجر، وكل الفريق بيشوفه. "
+            : "كل تعديل بيتحفظ لوحده في متصفحك. "}
+          بنبعت الإعدادات دي مع كل طلب AI عشان الاستخراج والردود تمشي على منتجاتك وأسعارك.
+        </p>
+        {prod && saveState && (
+          <p className="small muted" role="status">
+            {{ saving: "بنحفظ…", saved: "اتحفظ ✓", error: "ماتحفظش، جرّب تاني.", invalid: "فيه خطأ في الإعدادات، مش هيتحفظ لحد ما يتصلّح." }[saveState]}
+          </p>
+        )}
       </div>
 
+      {prod && <Integrations integrations={integrations} status={status} />}
+
+      {readOnly && (
+        <p className="alert alert-warn" role="status">تعديل الإعدادات لصاحب المتجر بس. تقدر تشوفها لكن مش تغيّرها.</p>
+      )}
+
+      <fieldset className="plain-fs" disabled={readOnly}>
       {check.error && (
         <p className="alert alert-bad" role="alert">
           {check.error} لحد ما تتصلّح، الاستخراج والردود هيوقفوا.
@@ -154,6 +217,7 @@ export default function SettingsView() {
           رجّع الإعدادات الأصلية
         </button>
       </p>
+      </fieldset>
     </div>
   );
 }

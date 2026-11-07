@@ -11,7 +11,9 @@ import { fmtMoney, fmtNum } from "@/lib/arabic";
 const fmtDate = (iso) => new Intl.DateTimeFormat("ar-EG", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }).format(new Date(iso));
 
 export default function OrdersBoard() {
-  const { ready, orders, store, moveOrder, deleteOrder, setOrders, resetOrders } = useApp();
+  const { ready, orders, store, moveOrder, moveOrders, deleteOrder, resetOrders, mode, base, user } = useApp();
+  const prod = mode === "prod";
+  const canDelete = !prod || user?.role === "owner"; // staff cannot delete orders
   const [q, setQ] = useState("");
   const [gov, setGov] = useState("");
   const [sel, setSel] = useState(() => new Set());
@@ -48,7 +50,7 @@ export default function OrdersBoard() {
       <div className="page-head">
         <h1>الأوردرات</h1>
         <p className="sub">
-          {fmtNum(orders.length)} أوردر. جزء منهم أوردرات تجريبية للعرض. <Link href="/inbox">ضيف أوردر من الرسايل</Link>
+          {fmtNum(orders.length)} أوردر.{prod ? "" : " جزء منهم أوردرات تجريبية للعرض."} <Link href={base || "/inbox"}>ضيف أوردر من الرسايل</Link>
         </p>
       </div>
 
@@ -96,7 +98,7 @@ export default function OrdersBoard() {
           onChange={(e) => {
             const s = e.target.value;
             if (!s) return;
-            setOrders((p) => p.map((o) => (sel.has(o.id) ? { ...o, status: s } : o)));
+            moveOrders([...sel], s);
             setBulk("");
           }}
         >
@@ -169,7 +171,7 @@ export default function OrdersBoard() {
                         <option value="">انقل إلى…</option>
                         {STATUSES.filter((x) => x.id !== o.status).map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
                       </select>
-                      <button
+                      {canDelete && <button
                         type="button"
                         className="btn btn-ghost btn-sm danger"
                         onClick={() => {
@@ -185,7 +187,7 @@ export default function OrdersBoard() {
                         aria-label={`امسح أوردر ${o.id}`}
                       >
                         مسح
-                      </button>
+                      </button>}
                     </div>
                   </li>
                 ))}
@@ -196,8 +198,8 @@ export default function OrdersBoard() {
       </div>
 
       <p className="footnote small muted">
-        الحالة الحالية محفوظة في متصفحك بس.{" "}
-        <button
+        {prod ? "الأوردرات محفوظة في قاعدة بيانات المتجر." : "الحالة الحالية محفوظة في متصفحك بس."}{" "}
+        {!prod && <button
           type="button"
           className="link-btn"
           onClick={() => {
@@ -208,7 +210,7 @@ export default function OrdersBoard() {
           }}
         >
           رجّع البيانات التجريبية
-        </button>
+        </button>}
       </p>
 
       {labels && selected.length > 0 && <LabelSheet orders={selected} storeName={store.name} onClose={() => setLabels(false)} />}

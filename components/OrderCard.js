@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useId, useMemo } from "react";
+import { useId, useMemo, useState } from "react";
 import { useApp } from "./AppProvider";
 import { GOV_NAMES } from "@/lib/governorates";
 import { computeMissing, computeTotals, itemPrice, itemProblem, normalizePhone, PHONE_RE } from "@/lib/order";
@@ -30,6 +30,8 @@ export default function OrderCard({ msg, entry, onNext }) {
   const app = useApp();
   const { store, orders, extractions, inbox } = app;
   const uid = useId();
+  const [saving, setSaving] = useState(false);
+  const [saveErr, setSaveErr] = useState("");
   const ex = entry.ex;
   const conf = ex.confidence || {};
   const added = inbox.added[msg.id];
@@ -68,10 +70,15 @@ export default function OrderCard({ msg, entry, onNext }) {
   if (!ex.governorate) blockers.push("المحافظة");
   if (!ex.address) blockers.push("العنوان");
 
-  function addToBoard() {
+  async function addToBoard() {
+    if (saving) return;
     const items = ex.items.map((it) => ({ ...it, price: itemPrice(store, it) }));
     const t = computeTotals(ex, store);
-    const id = app.addOrder({
+    setSaving(true);
+    setSaveErr("");
+    try {
+      const id = await app.addOrder({
+      messageId: msg.id,
       channel: msg.channel,
       name: ex.name,
       phone: ex.phone,
@@ -82,8 +89,13 @@ export default function OrderCard({ msg, entry, onNext }) {
       subtotal: t.subtotal,
       shipping: t.shipping,
       total: t.total,
-    });
-    app.markAdded(msg.id, id);
+      });
+      app.markAdded(msg.id, id);
+    } catch (e) {
+      setSaveErr(e.message || "حصلت مشكلة. جرّب تاني.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -130,6 +142,11 @@ export default function OrderCard({ msg, entry, onNext }) {
             if (p) patch({ phone: p, confidence: { ...conf, phone: 1 } });
           }}
         />
+        {!ex.phone && normalizePhone(msg.phone) && (
+          <button type="button" className="link-btn" onClick={() => patch({ phone: normalizePhone(msg.phone), confidence: { ...conf, phone: 0.9 } })}>
+            استخدم رقم الواتساب: {normalizePhone(msg.phone)}
+          </button>
+        )}
       </Field>
 
       <Field label="المحافظة" hl="area" state={isOrder ? state("governorate", ex.governorate) : ""} htmlFor={`${uid}-gov`}>
@@ -238,13 +255,14 @@ export default function OrderCard({ msg, entry, onNext }) {
 
       {added ? (
         <p className="alert alert-ok" role="status">
-          اتضاف للبورد، أوردر #{new Intl.NumberFormat("ar-EG").format(Number(added))}. <Link href="/orders">افتح الأوردرات</Link>
+          اتضاف للبورد، أوردر #{new Intl.NumberFormat("ar-EG").format(Number(added))}. <Link href={`${app.base}/orders`}>افتح الأوردرات</Link>
         </p>
       ) : (
         <>
-          <button type="button" className="btn btn-primary btn-lg" onClick={addToBoard} disabled={blockers.length > 0}>
-            ضيف للأوردرات
+          <button type="button" className="btn btn-primary btn-lg" onClick={addToBoard} disabled={blockers.length > 0 || saving} aria-busy={saving}>
+            {saving ? "بنضيف…" : "ضيف للأوردرات"}
           </button>
+          {saveErr && <p className="alert alert-bad small" role="alert">{saveErr}</p>}
           {blockers.length > 0 && <p className="hint">لسه محتاج: {blockers.join("، ")}.</p>}
         </>
       )}

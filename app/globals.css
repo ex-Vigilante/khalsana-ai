@@ -433,3 +433,14 @@ mark.hl-items { border-block-end-style: double; border-block-end-width: 3px; }
 @media (min-width: 1100px) {
   .mobile-next { display: none !important; }
 }
+
+/* sandbox label + workspace notices */
+.sandbox-bar { margin: 0; padding: 4px 16px; text-align: center; font-size: 0.85rem; font-weight: 700; background: var(--warn-soft); color: var(--warn-text); border-block-end: 1px solid var(--line); }
+.sandbox-bar a { color: inherit; margin-inline-start: 8px; }
+.notice { margin-inline: auto; max-width: 1100px; }
+.auth-card { max-width: 420px; margin-inline: auto; display: grid; gap: 10px; }
+.auth-card input { width: 100%; }
+.int-list { display: grid; gap: 6px; margin-block: 8px; }
+.int-list li { display: flex; justify-content: space-between; gap: 8px; align-items: center; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; }
+.code-line { display: block; padding: 8px 10px; border-radius: 8px; background: var(--surface-2); direction: ltr; text-align: left; overflow-wrap: anywhere; font-size: 0.85rem; }
+.plain-fs { border: 0; padding: 0; margin: 0; min-width: 0; }

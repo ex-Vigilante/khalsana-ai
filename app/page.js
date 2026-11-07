@@ -1,6 +1,7 @@
 import Link from "next/link";
 import AiMark from "@/components/AiMark";
 import { SAMPLE_MESSAGES } from "@/lib/samples";
+import { PROD_CONFIGURED } from "@/lib/mode";
 
 const STEPS = [
   { n: "١", t: "رسالة", d: "الزبون يبعتلك طلبه زي ما هو، بغلطاته وأرقامه العربي.", ai: false },
@@ -18,8 +19,9 @@ export default function Home() {
           للبياعين الأونلاين: الصق رسالة الزبون من واتساب أو ماسنجر أو إنستجرام، والـ AI يطلّعلك الأوردر كامل ورد جاهز وليبل شحن.
         </p>
         <div className="hero-cta">
-          <Link href="/inbox?sample=1" className="btn btn-primary btn-xl">جرّب على رسالة حقيقية</Link>
+          <Link href="/try?sample=1" className="btn btn-primary btn-xl">جرّب على رسالة حقيقية</Link>
           <span className="muted small">من غير تسجيل. الرسايل والبيانات تجريبية.</span>
+          {PROD_CONFIGURED && <Link href="/login" className="btn btn-ghost">دخول فريق المتجر</Link>}
         </div>
         <figure className="hero-sample">
           <figcaption className="small muted">مثال لرسالة زبون، هتجرّبها بنفسك:</figcaption>
@@ -60,15 +62,15 @@ export default function Home() {
           <li className="card">
             <div>
               <h3>الرسايل بتدخل إزاي؟</h3>
-              <p>في النسخة دي بتنسخ الرسالة وتلصقها. وممكن تتربط مباشرة بواتساب بيزنس وماسنجر، فالرسايل تدخل لوحدها.</p>
+              <p>تلصق الرسالة بإيدك في أي وقت، وكمان رسايل واتساب بيزنس بتدخل لوحدها لما المتجر يتربط بواتساب. ماسنجر وإنستجرام بالنسخ واللصق حالياً.</p>
             </div>
           </li>
         </ol>
       </section>
 
       <p className="home-links">
-        <Link href="/dashboard">شوف أرقام المتجر</Link>
-        <Link href="/orders">الأوردرات</Link>
+        <Link href="/try/dashboard">شوف أرقام المتجر (تجريبي)</Link>
+        <Link href="/try/orders">الأوردرات (تجريبي)</Link>
         <Link href="/about">عن خلّصانة</Link>
       </p>
     </div>

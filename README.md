@@ -5,7 +5,20 @@
 
 An AI tool for Egyptian online sellers. It reads messy customer messages in Egyptian Arabic from WhatsApp, Messenger and Instagram, turns them into clean orders, drafts the reply, and prints the shipping labels.
 
-**Live demo:** https://khalsana-ai.vercel.app
+**Try it (sandbox):** https://khalsana-ai.vercel.app/try — sample data, kept in your browser, no sign-up.
+
+## Two modes
+
+| | Sandbox (`/try`) | Real store (team login) |
+|---|---|---|
+| Data | Sample messages and orders, stored in the browser (localStorage) | Supabase Postgres: messages, orders, replies, settings |
+| Who | Anyone, always available | Team members only (email + password, Supabase Auth) |
+| Messages in | Paste or the built-in samples | WhatsApp Cloud API webhook (official, free to receive), plus a «رسالة جديدة» paste form |
+| Replies | Copy, or open in WhatsApp | One click «ابعت على واتساب» through the API (inside Meta's 24-hour window), or open in WhatsApp |
+
+The mode is decided by environment variables. With `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` set, the workspace (`/inbox`, `/orders`, `/dashboard`, `/settings`) requires a team login and uses the database. Without them the whole app is the sandbox, so the public link never breaks.
+
+**One store per deployment:** one Vercel project and one Supabase project per seller business. Setup for a non-technical seller (Arabic and English): see [SETUP.md](SETUP.md).
 
 ![Inbox: the AI highlights what it found in the message and fills the order card](screenshots/inbox-extract.jpg)
 
@@ -37,9 +50,20 @@ The home page explains the product in one line and sends you to a sample message
 - **Works without AI:** a rule-based Egyptian-Arabic extractor (Arabic-Indic digits, Franco-Arabic, area dictionary for all 27 governorates, product/colour/size spelling variants) runs when no key is set or the free limit is reached. The demo always works, at $0.
 - **Abuse protection:** same-origin check, input size limits, per-IP and global rate limits, timeouts, security headers.
 
+## Production architecture
+
+- **Database and auth:** Supabase (free tier) with `@supabase/supabase-js` and `@supabase/ssr` (cookie sessions, middleware refresh). Schema and policies: `supabase/schema.sql`. Row Level Security is on for every table; only signed-in users listed in `team_members` can read or write, anon has no access.
+- **Data layer:** the browser calls the app's own API routes (`/api/messages`, `/api/orders`, `/api/settings`, `/api/whatsapp/send`). They use the signed-in user's session client, so RLS applies, and they check team membership again on the server. The inbox refreshes every ~15 seconds (no realtime needed).
+- **WhatsApp webhook** (`/api/webhooks/whatsapp`): verification handshake on GET; on POST the `X-Hub-Signature-256` HMAC of the raw body is checked with the app secret (timing-safe) before anything is parsed. Messages are saved with the service-role key (server-only) using the unique WhatsApp message id, so Meta's retries never create duplicates. Failures return 500 so Meta retries. Optional `AUTO_EXTRACT=true` extracts each new text message in the background.
+- **Roles:** owners can edit settings and delete orders/messages; staff can read everything, add messages/orders/replies and change statuses. Enforced with column grants and role-aware policies in the database, and again in the API routes. Only users whose email is confirmed and listed in `team_members` count.
+- **Limits:** the inbox shows the newest 200 messages and the orders board the newest 1000 orders; older ones stay in the database (export or query them in Supabase). A "load more" is not built yet.
+- **Integrations panel:** Settings → الربط shows which integrations are configured (yes/no only, never values) and the exact webhook URL.
+- **Secrets:** the service-role key, WhatsApp secrets and the AI key exist only in server files; the only Supabase values in the browser are the public URL and anon key.
+
 ## Tech stack
 
 - Next.js 15 (App Router) + React 19
+- Supabase (Postgres + Auth), Meta WhatsApp Cloud API
 - Groq API (free tier, `openai/gpt-oss-120b`) through plain `fetch`, no SDK
 - Chart.js via react-chartjs-2
 - Hand-written Code128 barcode encoder (SVG) and CSV export (UTF-8 BOM for Excel)
@@ -55,7 +79,7 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000. Without a key, the app runs in demo mode (وضع تجريبي).
+Open http://localhost:3000. Without Supabase variables the app is the sandbox, and without an AI key it runs in demo mode (وضع تجريبي). To run the real workspace locally, copy the variable names from `.env.example` into `.env.local` (see [SETUP.md](SETUP.md)).
 
 For live AI, get a free key at https://console.groq.com (no credit card), then create `.env.local` in the project folder:
 
@@ -69,9 +93,9 @@ GROQ_MODEL=openai/gpt-oss-120b
 ## Deploy on Vercel (free)
 
 1. Import this repo at https://vercel.com/new.
-2. Optional: add `GROQ_API_KEY` in **Settings → Environment Variables**, then redeploy.
+2. Optional: add `GROQ_API_KEY` in **Settings → Environment Variables**, then redeploy. For the real workspace add the Supabase and WhatsApp variables too (full list in `.env.example`, steps in [SETUP.md](SETUP.md)).
 3. Recommended: set a usage limit in the Groq console. On the free tier with no card, it can't cost money.
 
 ## Notes
 
-«بيت الكتان», its products, customers and orders are fictional demo data, stored only in your browser. Pricing and testimonials are samples.
+In the sandbox, «بيت الكتان», its products, customers and orders are fictional demo data, stored only in your browser. In a real deployment the same sample store is only the starting default in the settings table, and you edit it to match your own products. Pricing on the About page is a sample.

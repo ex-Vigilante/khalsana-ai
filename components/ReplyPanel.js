@@ -2,16 +2,18 @@
 import { useEffect, useRef, useState } from "react";
 import { useApp } from "./AppProvider";
 import { streamText, parseReply } from "@/lib/streamClient";
-import { validateStore, waNumber } from "@/lib/order";
+import { normalizePhone, validateStore, waNumber } from "@/lib/order";
 import AiMark from "./AiMark";
 
 export default function ReplyPanel({ msg, entry }) {
-  const { store, setExtraction } = useApp();
+  const { store, setExtraction, integrations, setMessageStatus, sendWhatsApp, mode } = useApp();
   const [tone, setTone] = useState("friendly");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [copied, setCopied] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState("");
   const abort = useRef(null);
   const reply = entry.reply;
 
@@ -21,7 +23,10 @@ export default function ReplyPanel({ msg, entry }) {
     return stop;
   }, [entry.ex, msg.id]);
   const phone = entry.ex.phone;
-  const wa = waNumber(phone);
+  const wa = waNumber(phone) || waNumber(normalizePhone(msg.phone));
+  // Replies through the official API only work for chats that arrived through it.
+  const canSend = Boolean(integrations?.whatsappSend && sendWhatsApp && msg.api && msg.channel === "whatsapp");
+  const stale = Date.now() - msg.ts > 24 * 3600 * 1000;
 
   const setReply = (r) => setExtraction(msg.id, (p) => ({ ...p, reply: r }));
 
@@ -55,6 +60,33 @@ export default function ReplyPanel({ msg, entry }) {
       if (e.name !== "AbortError") setErr(e.message || "حصلت مشكلة. جرّب تاني.");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function send() {
+    if (sending || !text) return;
+    if (!window.confirm("تبعت الرد ده للزبون على واتساب دلوقتي؟")) return;
+    setSending(true);
+    setErr("");
+    setSent("");
+    try {
+      await sendWhatsApp(msg.id, text);
+      setSent("اتبعت للزبون على واتساب ✓");
+    } catch (e) {
+      setErr(e.message || "حصلت مشكلة. جرّب تاني.");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  async function markReplied() {
+    setErr("");
+    setSent("");
+    try {
+      await setMessageStatus(msg.id, "replied", text);
+      setSent("اتعلّم إنه اتردّ عليه ✓");
+    } catch (e) {
+      setErr(e.message || "حصلت مشكلة. جرّب تاني.");
     }
   }
 
@@ -122,11 +154,20 @@ export default function ReplyPanel({ msg, entry }) {
       {reply?.unavailable && <p className="alert alert-warn small">الـ AI مش متاح دلوقتي، ده رد تجريبي من قالب جاهز.</p>}
       {reply?.interrupted && <p className="alert alert-warn small">الرد اتقطع في النص. اضغط «اكتب الرد تاني».</p>}
       {err && <p className="alert alert-bad small" role="alert">{err}</p>}
+      {sent && <p className="alert alert-ok small" role="status">{sent}</p>}
+      {canSend && stale && text && (
+        <p className="alert alert-warn small">عدّى أكتر من ٢٤ ساعة على رسالة الزبون. واتساب غالباً هيرفض الإرسال من الـ API، ولو حصل افتح المحادثة في واتساب وردّ منها.</p>
+      )}
 
       <div className="row-gap">
         <button type="button" className="btn btn-ghost" onClick={copy} disabled={!text || busy}>
           {copied ? "اتنسخ ✓" : "نسخ الرد"}
         </button>
+        {canSend && (
+          <button type="button" className="btn btn-primary" onClick={send} disabled={!text || busy || sending} aria-busy={sending}>
+            {sending ? "بنبعت…" : "ابعت على واتساب"}
+          </button>
+        )}
         {wa && text && !busy ? (
           <a className="btn btn-primary" href={`https://wa.me/${wa}?text=${encodeURIComponent(text)}`} target="_blank" rel="noopener noreferrer">
             افتح في واتساب
@@ -139,6 +180,11 @@ export default function ReplyPanel({ msg, entry }) {
         <button type="button" className="btn btn-ghost" onClick={() => setEditing((v) => !v)} disabled={!text || busy}>
           {editing ? "خلّصت التعديل" : "عدّل الرد"}
         </button>
+        {mode === "prod" && (
+          <button type="button" className="btn btn-ghost" onClick={markReplied} disabled={busy || msg.status === "replied"}>
+            {msg.status === "replied" ? "اتردّ عليه ✓" : "علّم إنه اتردّ عليه"}
+          </button>
+        )}
       </div>
       <span className="sr-only" role="status">{copied ? "اتنسخ الرد" : ""}</span>
     </div>

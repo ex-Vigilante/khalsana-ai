@@ -2,14 +2,29 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useApp } from "./AppProvider";
+import { PROD_CONFIGURED, isSandboxPath, isWorkspacePath } from "@/lib/mode";
 
-const NAV = [
+// Workspace pages live at /inbox, /orders…; the public sandbox mirrors them under /try.
+const workNav = (b) => [
   { href: "/", label: "الرئيسية" },
-  { href: "/inbox", label: "الرسايل" },
-  { href: "/orders", label: "الأوردرات" },
-  { href: "/dashboard", label: "الأرقام" },
-  { href: "/settings", label: "الإعدادات" },
+  { href: b || "/inbox", label: "الرسايل", exact: Boolean(b) },
+  { href: b + "/orders", label: "الأوردرات" },
+  { href: b + "/dashboard", label: "الأرقام" },
+  { href: b + "/settings", label: "الإعدادات" },
 ];
+const PUBLIC_NAV = [
+  { href: "/", label: "الرئيسية" },
+  { href: "/try", label: "جرّب" },
+  { href: "/login", label: "دخول فريق المتجر" },
+];
+
+async function logout() {
+  try {
+    const { createClient } = await import("@/lib/supabase/client");
+    await createClient().auth.signOut();
+  } catch {}
+  window.location.href = "/login";
+}
 
 export function AiBadge() {
   const { live } = useApp();
@@ -51,7 +66,10 @@ function ThemeToggle() {
 }
 
 export default function Shell({ children }) {
-  const path = usePathname();
+  const path = usePathname() || "/";
+  const { mode, notice, clearNotice, user } = useApp();
+  const sandbox = isSandboxPath(path);
+  const nav = PROD_CONFIGURED && !sandbox && !isWorkspacePath(path) ? PUBLIC_NAV : workNav(sandbox ? "/try" : "");
   return (
     <>
       <header className="topbar">
@@ -60,8 +78,8 @@ export default function Shell({ children }) {
             خلّصانة
           </Link>
           <nav className="nav" aria-label="التنقل الرئيسي">
-            {NAV.map((n) => {
-              const current = n.href === "/" ? path === "/" : path.startsWith(n.href);
+            {nav.map((n) => {
+              const current = n.href === "/" || n.exact ? path === n.href : path.startsWith(n.href);
               return (
                 <Link key={n.href} href={n.href} aria-current={current ? "page" : undefined}>
                   {n.label}
@@ -72,10 +90,25 @@ export default function Shell({ children }) {
           <div className="top-tools">
             <AiBadge />
             <ThemeToggle />
+            {mode === "prod" && (
+              <button type="button" className="btn btn-ghost btn-sm" onClick={logout} title={user?.email || ""}>
+                خروج
+              </button>
+            )}
           </div>
         </div>
       </header>
+      {sandbox && (
+        <p className="sandbox-bar" role="note">
+          تجربة — بيانات تجريبية. <Link href="/">الرئيسية</Link>
+        </p>
+      )}
       <main id="main" tabIndex={-1} className="main">
+        {notice && (
+          <p className="alert alert-bad notice" role="alert">
+            {notice} <button type="button" className="link-btn" onClick={clearNotice}>إخفاء</button>
+          </p>
+        )}
         {children}
       </main>
     </>

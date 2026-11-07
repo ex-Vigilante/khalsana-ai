@@ -50,7 +50,7 @@ function ChartCard({ title, rows, theme, horizontal = true, color, unit, note })
 }
 
 export default function Analytics() {
-  const { ready, orders, messagesProcessed, theme, store } = useApp();
+  const { ready, orders, messagesProcessed, theme, store, mode, base } = useApp();
 
   const k = useMemo(() => {
     const today = new Date().toDateString();
@@ -76,7 +76,11 @@ export default function Analytics() {
       <div className="page-head">
         <h1>أرقام المتجر</h1>
         <p className="sub">
-          أرقام «{store.name}» آخر ١٤ يوم. البيانات تجريبية ومحفوظة في متصفحك، و<Link href="/inbox">كل أوردر جديد بتضيفه</Link> بيظهر هنا.
+          {mode === "prod" ? (
+            <>أرقام «{store.name}» آخر ١٤ يوم، محسوبة من أوردراتك الحقيقية. <Link href="/inbox">كل أوردر جديد بتضيفه</Link> بيظهر هنا.</>
+          ) : (
+            <>أرقام «{store.name}» آخر ١٤ يوم. البيانات تجريبية ومحفوظة في متصفحك، و<Link href={base || "/inbox"}>كل أوردر جديد بتضيفه</Link> بيظهر هنا.</>
+          )}
         </p>
       </div>
 
