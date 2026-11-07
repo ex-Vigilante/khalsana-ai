@@ -1,8 +1,11 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useApp } from "./AppProvider";
 import OrderCard from "./OrderCard";
 import ReplyPanel from "./ReplyPanel";
+import AiMark from "./AiMark";
+import HighlightedMessage from "./HighlightedMessage";
 import { CHANNELS, SAMPLE_MESSAGES, channelLabel } from "@/lib/samples";
 import { validateStore, MAX_MESSAGE } from "@/lib/order";
 
@@ -12,6 +15,8 @@ const INTENT = {
   complaint: { label: "شكوى", cls: "badge-bad" },
   other: { label: "تانية", cls: "badge-muted" },
 };
+
+const TABS = [["list", "الرسايل"], ["msg", "١ الرسالة"], ["order", "٢ الأوردر"], ["reply", "٣ الرد"]];
 
 function ago(mins) {
   if (mins < 1) return "دلوقتي";
@@ -23,14 +28,26 @@ function ago(mins) {
 export default function InboxView() {
   const app = useApp();
   const { ready, store, inbox, extractions } = app;
+  const fromHome = useSearchParams().get("sample") === "1";
   const [channel, setChannel] = useState("all");
   const [selId, setSelId] = useState("m1");
-  const [tab, setTab] = useState("list");
+  const [tab, setTab] = useState(fromHome ? "msg" : "list");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [draft, setDraft] = useState("");
   const [draftChannel, setDraftChannel] = useState("whatsapp");
   const [draftFrom, setDraftFrom] = useState("");
+
+  // On a phone, bring the step bar back into view whenever the step changes.
+  const firstTab = useRef(true);
+  useEffect(() => {
+    if (firstTab.current) {
+      firstTab.current = false;
+      return;
+    }
+    const bar = document.querySelector(".pane-tabs");
+    if (bar && bar.offsetParent) window.scrollTo({ top: Math.max(0, bar.getBoundingClientRect().top + window.scrollY - 60) });
+  }, [tab]);
 
   const messages = useMemo(() => {
     const now = Date.now();
@@ -103,30 +120,23 @@ export default function InboxView() {
     <div className="page">
       <div className="page-head">
         <h1>الرسايل</h1>
-        <p className="sub">اختار رسالة واضغط «استخرج الأوردر». كل الرسايل هنا تجريبية ومتخيّلة.</p>
+        <p className="sub">
+          ٣ خطوات: <strong>١</strong> اختار رسالة واضغط «استخرج الأوردر»، <strong>٢</strong> راجع الأوردر، <strong>٣</strong> اكتب الرد. كل الرسايل هنا تجريبية ومتخيّلة.
+        </p>
       </div>
 
-      <div className="pane-tabs" role="tablist" aria-label="أقسام الشاشة">
-        {[["list", "الرسايل"], ["msg", "الرسالة"], ["order", "الأوردر"]].map(([id, label]) => (
+      <div className="pane-tabs" role="tablist" aria-label="خطوات الشاشة">
+        {TABS.map(([id, label]) => (
           <button key={id} role="tab" type="button" aria-selected={tab === id} onClick={() => setTab(id)}>
             {label}
           </button>
         ))}
       </div>
 
-      <div className="inbox">
-        {/* column 1: list */}
+      <div className="inbox" data-tab={tab}>
+        {/* list */}
         <section className="pane card" data-show={tab === "list"} aria-label="قايمة الرسايل">
-          <div className="chan-tabs" role="group" aria-label="القناة">
-            <button type="button" aria-pressed={channel === "all"} onClick={() => setChannel("all")}>
-              الكل <span className="count">{new Intl.NumberFormat("ar-EG").format(messages.length)}</span>
-            </button>
-            {CHANNELS.map((c) => (
-              <button key={c.id} type="button" aria-pressed={channel === c.id} onClick={() => setChannel(c.id)}>
-                {c.label} <span className="count">{new Intl.NumberFormat("ar-EG").format(counts[c.id])}</span>
-              </button>
-            ))}
-          </div>
+          <h2 className="pane-title">اختار رسالة</h2>
           <ul className="msg-list">
             {list.map((m) => {
               const e = extractions[m.id];
@@ -150,88 +160,102 @@ export default function InboxView() {
             })}
             {list.length === 0 && <li className="muted pad">مفيش رسايل في القناة دي.</li>}
           </ul>
-          <form className="paste" onSubmit={addPasted}>
-            <label htmlFor="paste-text">الصق رسالة جديدة</label>
-            <textarea
-              id="paste-text"
-              rows={3}
-              maxLength={MAX_MESSAGE}
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              placeholder="الصق هنا رسالة زبون من واتساب أو ماسنجر…"
-              dir="auto"
-            />
-            <div className="row-gap">
-              <label className="sr-only" htmlFor="paste-chan">القناة</label>
-              <select id="paste-chan" value={draftChannel} onChange={(e) => setDraftChannel(e.target.value)}>
-                {CHANNELS.map((c) => (
-                  <option key={c.id} value={c.id}>{c.label}</option>
-                ))}
-              </select>
-              <label className="sr-only" htmlFor="paste-from">اسم الزبون</label>
-              <input id="paste-from" value={draftFrom} onChange={(e) => setDraftFrom(e.target.value)} placeholder="اسم الزبون (اختياري)" maxLength={40} />
+
+          <details className="opts">
+            <summary>خيارات: ضيف رسالتك أو فلتر بالقناة</summary>
+            <div className="chan-tabs" role="group" aria-label="القناة">
+              <button type="button" aria-pressed={channel === "all"} onClick={() => setChannel("all")}>
+                الكل <span className="count">{new Intl.NumberFormat("ar-EG").format(messages.length)}</span>
+              </button>
+              {CHANNELS.map((c) => (
+                <button key={c.id} type="button" aria-pressed={channel === c.id} onClick={() => setChannel(c.id)}>
+                  {c.label} <span className="count">{new Intl.NumberFormat("ar-EG").format(counts[c.id])}</span>
+                </button>
+              ))}
             </div>
-            <button type="submit" className="btn btn-ghost" disabled={!draft.trim()}>ضيف للرسايل</button>
-          </form>
+            <form className="paste" onSubmit={addPasted}>
+              <label htmlFor="paste-text">الصق رسالة زبون</label>
+              <textarea
+                id="paste-text"
+                rows={3}
+                maxLength={MAX_MESSAGE}
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                placeholder="الصق هنا رسالة زبون من واتساب أو ماسنجر…"
+                dir="auto"
+              />
+              <div className="row-gap">
+                <label className="sr-only" htmlFor="paste-chan">القناة</label>
+                <select id="paste-chan" value={draftChannel} onChange={(e) => setDraftChannel(e.target.value)}>
+                  {CHANNELS.map((c) => (
+                    <option key={c.id} value={c.id}>{c.label}</option>
+                  ))}
+                </select>
+                <label className="sr-only" htmlFor="paste-from">اسم الزبون</label>
+                <input id="paste-from" value={draftFrom} onChange={(e) => setDraftFrom(e.target.value)} placeholder="اسم الزبون (اختياري)" maxLength={40} />
+              </div>
+              <button type="submit" className="btn btn-ghost" disabled={!draft.trim()}>ضيف للرسايل</button>
+            </form>
+          </details>
         </section>
 
-        {/* column 2: message + reply */}
-        <section className="pane" data-show={tab === "msg"} aria-label="الرسالة والرد">
+        {/* middle: step 1 (message) and step 3 (reply) */}
+        <section className="pane" data-show={tab === "msg" || tab === "reply"} aria-label="الرسالة والرد">
           {msg && (
             <>
-              <div className="card msg-view">
+              <div className="card msg-view step-msg">
                 <div className="msg-head">
                   <div>
-                    <h2>{msg.from}</h2>
+                    <h2><span className="step-chip" aria-hidden="true">١</span> الرسالة من {msg.from}</h2>
                     <span className="muted small">{channelLabel(msg.channel)} · {ago(msg.minsAgo)}</span>
                   </div>
-                  {entry && (
-                    <span className={`badge ${INTENT[entry.ex.intent].cls}`}>{INTENT[entry.ex.intent].label}</span>
-                  )}
+                  {entry && <span className={`badge ${INTENT[entry.ex.intent].cls}`}>{INTENT[entry.ex.intent].label}</span>}
                 </div>
-                <p className="bubble" dir="auto">{msg.text}</p>
-                <div className="row-gap">
-                  <button type="button" className="btn btn-primary btn-lg" onClick={extract} disabled={busy} aria-busy={busy}>
-                    {busy ? "بنقرا الرسالة…" : entry ? "استخرج تاني" : "استخرج الأوردر"}
-                  </button>
-                  {entry && (
-                    <span className="small muted">
-                      {entry.source === "ai" ? "اتحلّلت بالـ AI" : "اتحلّلت بقواعد الوضع التجريبي"}
-                    </span>
-                  )}
-                </div>
+                <HighlightedMessage text={msg.text} ex={entry?.ex} store={store} showSaved />
+                <button type="button" className={`btn btn-lg ${entry ? "btn-ghost" : "btn-primary"}`} onClick={extract} disabled={busy} aria-busy={busy}>
+                  {busy ? "الـ AI بيقرا الرسالة…" : entry ? "استخرج تاني" : <>استخرج الأوردر <AiMark /></>}
+                </button>
+                {entry && (
+                  <p className="small muted">
+                    {entry.source === "ai" ? "اتحلّلت بالـ AI. الألوان فوق بتوريك أخد إيه من الرسالة." : "اتحلّلت بقواعد الوضع التجريبي. الألوان فوق بتوريك أخد إيه من الرسالة."}
+                  </p>
+                )}
                 <div aria-live="polite" className="msg-status">
                   {err && <p className="alert alert-bad" role="alert">{err}</p>}
                   {entry?.unavailable && (
                     <p className="alert alert-warn">الـ AI مش متاح دلوقتي، فاستخدمنا القواعد الجاهزة بدله. راجع الحقول كويس.</p>
                   )}
                 </div>
-              </div>
-              {entry ? (
-                <ReplyPanel msg={msg} entry={entry} />
-              ) : (
-                <div className="card empty">
-                  <p>بعد الاستخراج هيظهر هنا الرد الجاهز للزبون.</p>
-                </div>
-              )}
-              <p className="mobile-next">
+                <button type="button" className="btn btn-ghost mobile-next" onClick={() => setTab("list")}>اختار رسالة تانية</button>
                 {entry && (
-                  <button type="button" className="btn btn-ghost" onClick={() => setTab("order")}>شوف كارت الأوردر</button>
+                  <button type="button" className="btn btn-accent btn-lg mobile-next" onClick={() => setTab("order")}>٢ كمّل: راجع الأوردر</button>
                 )}
-              </p>
+              </div>
+              <div className="step-reply">
+                {entry ? (
+                  <ReplyPanel msg={msg} entry={entry} />
+                ) : (
+                  <div className="card empty">
+                    <h2><span className="step-chip" aria-hidden="true">٣</span> الرد على الزبون</h2>
+                    <p>بعد ما تستخرج الأوردر، هنكتبلك هنا رد جاهز للزبون.</p>
+                    <button type="button" className="btn btn-ghost mobile-next" onClick={() => setTab("msg")}>ارجع للخطوة ١</button>
+                  </div>
+                )}
+              </div>
             </>
           )}
         </section>
 
-        {/* column 3: order card */}
+        {/* right/left column: step 2 (order card) */}
         <section className="pane" data-show={tab === "order"} aria-label="كارت الأوردر">
           {entry ? (
-            <OrderCard msg={msg} entry={entry} />
+            <OrderCard msg={msg} entry={entry} onNext={() => setTab("reply")} />
           ) : (
             <div className="card empty">
-              <h2>كارت الأوردر</h2>
-              <p>اضغط «استخرج الأوردر» وهنملى الاسم والتليفون والمحافظة والأصناف لوحدنا، وإنت بس تراجع.</p>
+              <h2><span className="step-chip" aria-hidden="true">٢</span> كارت الأوردر</h2>
+              <p>اضغط «استخرج الأوردر» وهنملى الاسم والتليفون والمحافظة والأصناف لوحدنا، وانت بس تراجع.</p>
               <p className="muted small">الحقول الناقصة بتتعلّم بلون مختلف عشان تراجعها بسرعة.</p>
+              <button type="button" className="btn btn-primary mobile-next" onClick={() => setTab("msg")}>ارجع للخطوة ١</button>
             </div>
           )}
         </section>

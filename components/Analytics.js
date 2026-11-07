@@ -65,7 +65,7 @@ export default function Analytics() {
     return { todays: todays.length, cod, openCount: open.length, govs, prods, chans, recentCount: recent.length };
   }, [orders]);
 
-  if (!ready) return <p className="loading" role="status">بنحمّل اللوحة…</p>;
+  if (!ready) return <p className="loading" role="status">بنحمّل الأرقام…</p>;
 
   const mins = messagesProcessed * MIN_PER_MESSAGE;
   const hours = mins / 60;
@@ -74,7 +74,7 @@ export default function Analytics() {
   return (
     <div className="page">
       <div className="page-head">
-        <h1>اللوحة</h1>
+        <h1>أرقام المتجر</h1>
         <p className="sub">
           أرقام «{store.name}» آخر ١٤ يوم. البيانات تجريبية ومحفوظة في متصفحك، و<Link href="/inbox">كل أوردر جديد بتضيفه</Link> بيظهر هنا.
         </p>

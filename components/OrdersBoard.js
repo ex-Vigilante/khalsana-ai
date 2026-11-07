@@ -83,10 +83,10 @@ export default function OrdersBoard() {
       <div className="bulkbar" role="region" aria-label="إجراءات على المحدد" aria-live="polite">
         <span><strong>{fmtNum(selected.length)}</strong> محدد</span>
         <button type="button" className="btn btn-primary" disabled={!selected.length} onClick={() => setLabels(true)}>
-          اطبع ليبلات ({fmtNum(selected.length)})
+          اطبع ليبلات الشحن ({fmtNum(selected.length)})
         </button>
         <button type="button" className="btn btn-ghost" disabled={!exportList.length} onClick={() => downloadCsv(exportList)}>
-          تصدير CSV ({fmtNum(exportList.length)}{selected.length ? " محدد" : " معروض"})
+          تصدير لإكسل ({fmtNum(exportList.length)}{selected.length ? " محدد" : " معروض"})
         </button>
         <label className="sr-only" htmlFor="bulk">نقل المحدد إلى</label>
         <select

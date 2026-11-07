@@ -5,17 +5,18 @@ import { useApp } from "./AppProvider";
 import { GOV_NAMES } from "@/lib/governorates";
 import { computeMissing, computeTotals, itemPrice, itemProblem, normalizePhone, PHONE_RE } from "@/lib/order";
 import { fmtMoney } from "@/lib/arabic";
+import AiMark from "./AiMark";
 
 const LOW = 0.7;
 const sigOf = (ex) =>
   (ex.items || []).map((i) => `${i.productId}|${i.size || ""}|${i.color || ""}|${i.qty}`).sort().join(";");
 
 // Field wrapper that marks missing / low-confidence values.
-function Field({ label, state, hint, children, htmlFor }) {
+function Field({ label, state, hint, children, htmlFor, hl }) {
   return (
     <div className={`field ${state ? `field-${state}` : ""}`}>
       <div className="field-top">
-        <label htmlFor={htmlFor}>{label}</label>
+        <label htmlFor={htmlFor}>{hl && <span className={`swatch hl-${hl}`} aria-hidden="true" />}{label}</label>
         {state === "missing" && <span className="tag tag-warn">ناقص</span>}
         {state === "low" && <span className="tag tag-orange">راجعه</span>}
       </div>
@@ -25,7 +26,7 @@ function Field({ label, state, hint, children, htmlFor }) {
   );
 }
 
-export default function OrderCard({ msg, entry }) {
+export default function OrderCard({ msg, entry, onNext }) {
   const app = useApp();
   const { store, orders, extractions, inbox } = app;
   const uid = useId();
@@ -88,8 +89,8 @@ export default function OrderCard({ msg, entry }) {
   return (
     <div className="card order-card">
       <div className="card-head">
-        <h2>كارت الأوردر</h2>
-        <span className="small muted">{entry.source === "ai" ? "من الـ AI" : "من القواعد"}</span>
+        <h2><span className="step-chip" aria-hidden="true">٢</span> راجع الأوردر</h2>
+        <span className="small muted">{entry.source === "ai" ? <AiMark>ملاه الـ AI</AiMark> : "ملاه الوضع التجريبي"}</span>
       </div>
 
       {!isOrder && (
@@ -100,7 +101,7 @@ export default function OrderCard({ msg, entry }) {
       {dup && <p className="alert alert-warn small" role="status">{dup}</p>}
       {ex.notes && <p className="note small">ملاحظة: {ex.notes}</p>}
 
-      <Field label="الاسم" state={isOrder ? state("name", ex.name) : ""} htmlFor={`${uid}-name`}>
+      <Field label="الاسم" hl="name" state={isOrder ? state("name", ex.name) : ""} htmlFor={`${uid}-name`}>
         <input id={`${uid}-name`} value={ex.name || ""} maxLength={60} onChange={(e) => patch({ name: e.target.value || null, confidence: { ...conf, name: 1 } })} />
         {!ex.name && msg.from && (!msg.pasted || msg.named) && (
           <button type="button" className="link-btn" onClick={() => patch({ name: msg.from, confidence: { ...conf, name: 0.6 } })}>
@@ -111,6 +112,7 @@ export default function OrderCard({ msg, entry }) {
 
       <Field
         label="التليفون"
+        hl="phone"
         state={isOrder ? (ex.phone && !phoneOk ? "missing" : state("phone", ex.phone)) : ""}
         htmlFor={`${uid}-phone`}
         hint={ex.phone && !phoneOk ? "الرقم لازم يبدأ بـ 010 أو 011 أو 012 أو 015 وطوله 11 رقم." : null}
@@ -130,7 +132,7 @@ export default function OrderCard({ msg, entry }) {
         />
       </Field>
 
-      <Field label="المحافظة" state={isOrder ? state("governorate", ex.governorate) : ""} htmlFor={`${uid}-gov`}>
+      <Field label="المحافظة" hl="area" state={isOrder ? state("governorate", ex.governorate) : ""} htmlFor={`${uid}-gov`}>
         <select id={`${uid}-gov`} value={ex.governorate || ""} onChange={(e) => patch({ governorate: e.target.value || null, confidence: { ...conf, governorate: 1 } })}>
           <option value="">اختار المحافظة</option>
           {GOV_NAMES.map((g) => (
@@ -139,12 +141,12 @@ export default function OrderCard({ msg, entry }) {
         </select>
       </Field>
 
-      <Field label="العنوان بالتفصيل" state={isOrder ? state("address", ex.address) : ""} htmlFor={`${uid}-addr`}>
+      <Field label="العنوان بالتفصيل" hl="area" state={isOrder ? state("address", ex.address) : ""} htmlFor={`${uid}-addr`}>
         <textarea id={`${uid}-addr`} rows={2} value={ex.address || ""} maxLength={200} onChange={(e) => patch({ address: e.target.value || null, confidence: { ...conf, address: 1 } })} />
       </Field>
 
       <fieldset className={`items ${isOrder && (!ex.items?.length || (conf.items ?? 1) < LOW) ? "field-low" : ""}`}>
-        <legend>الأصناف</legend>
+        <legend><span className="swatch hl-items" aria-hidden="true" />الأصناف</legend>
         {ex.items?.length === 0 && <p className="hint">مفيش أصناف متعرّفة. ضيف صنف.</p>}
         {ex.items?.map((it, i) => {
           const p = store.products.find((x) => x.id === it.productId);
@@ -245,6 +247,9 @@ export default function OrderCard({ msg, entry }) {
           </button>
           {blockers.length > 0 && <p className="hint">لسه محتاج: {blockers.join("، ")}.</p>}
         </>
+      )}
+      {onNext && (
+        <button type="button" className="btn btn-accent btn-lg mobile-next" onClick={onNext}>٣ كمّل: اكتب الرد للزبون</button>
       )}
     </div>
   );

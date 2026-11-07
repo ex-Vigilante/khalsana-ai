@@ -7,11 +7,11 @@ An AI tool for Egyptian online sellers. It reads messy customer messages in Egyp
 
 **Live demo:** https://khalsana-ai.vercel.app
 
-![Inbox with an extracted order and a drafted reply](screenshots/inbox-extract.jpg)
+![Inbox: the AI highlights what it found in the message and fills the order card](screenshots/inbox-extract.jpg)
 
-| Dashboard | Orders board (phone, dark mode) |
-|---|---|
-| ![Analytics dashboard](screenshots/dashboard.jpg) | ![Orders board on a phone](screenshots/orders-mobile-dark.jpg) |
+| Home | Numbers page | Orders board (phone) |
+|---|---|---|
+| ![Home page with the try-it button](screenshots/home.jpg) | ![Analytics dashboard](screenshots/dashboard.jpg) | ![Orders board on a phone](screenshots/orders-mobile-dark.jpg) |
 
 ## The problem (case study)
 
@@ -23,11 +23,11 @@ Someone copies every message into a spreadsheet by hand, works out the shipping 
 
 ## The solution
 
-1. **Extract:** one click turns the message into a structured order: customer name, phone (normalised to `01XXXXXXXXX`), governorate (from area names like «مدينة نصر» → القاهرة), address, and items matched to the real catalog (product, size, colour, quantity). Missing or low-confidence fields are highlighted.
+1. **Extract:** one click turns the message into a structured order: customer name, phone (normalised to `01XXXXXXXXX`), governorate (from area names like «مدينة نصر» → القاهرة), address, and items matched to the real catalog (product, size, colour, quantity). The parts of the original message the AI used are colour-marked to match the order fields, and missing or low-confidence fields are flagged.
 2. **Reply:** an Egyptian-dialect reply is drafted. It confirms the order and the cash-on-delivery total, or asks only for what's missing, or answers a price question. Out-of-stock items are flagged, and the reply offers alternatives. One click opens it in WhatsApp.
 3. **Ship:** move orders across a board (جديد → مؤكَّد → اتشحن → اتسلّم → مرتجع), print A6 shipping labels with Code128 barcodes, and export to Excel-ready CSV.
 
-The analytics dashboard shows cash on delivery to collect, top governorates and products, orders per channel, and an estimate of the time saved.
+The home page explains the product in one line and sends you to a sample message; the numbers page shows cash on delivery to collect, top governorates and products, orders per channel, and an estimate of the time saved.
 
 ## How the AI is built
 

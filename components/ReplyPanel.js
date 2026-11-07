@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useApp } from "./AppProvider";
 import { streamText, parseReply } from "@/lib/streamClient";
 import { validateStore, waNumber } from "@/lib/order";
+import AiMark from "./AiMark";
 
 export default function ReplyPanel({ msg, entry }) {
   const { store, setExtraction } = useApp();
@@ -79,7 +80,16 @@ export default function ReplyPanel({ msg, entry }) {
   return (
     <div className="card reply">
       <div className="reply-head">
-        <h2>الرد على الزبون</h2>
+        <h2><span className="step-chip" aria-hidden="true">٣</span> الرد على الزبون</h2>
+        <AiMark>الـ AI بيكتب</AiMark>
+      </div>
+
+      <button type="button" className="btn btn-accent btn-lg" onClick={write} disabled={busy}>
+        {busy ? "بنكتب الرد…" : text ? "اكتب الرد تاني" : "اكتب الرد"}
+      </button>
+
+      <details className="opts">
+        <summary>خيارات: نبرة الرد</summary>
         <fieldset className="seg">
           <legend className="sr-only">نبرة الرد</legend>
           {[["friendly", "ودود"], ["formal", "رسمي-خفيف"]].map(([id, label]) => (
@@ -89,11 +99,7 @@ export default function ReplyPanel({ msg, entry }) {
             </label>
           ))}
         </fieldset>
-      </div>
-
-      <button type="button" className="btn btn-accent" onClick={write} disabled={busy}>
-        {busy ? "بنكتب الرد…" : text ? "اكتب الرد تاني" : "اكتب الرد"}
-      </button>
+      </details>
 
       <div className="reply-out" role="status" aria-live="polite" aria-busy={busy} aria-label="نص الرد">
         {editing ? (
@@ -109,7 +115,7 @@ export default function ReplyPanel({ msg, entry }) {
         ) : text ? (
           <p dir="auto" className="reply-text">{text}</p>
         ) : (
-          <p className="muted">{busy ? "…" : "لسه مفيش رد. اختار النبرة واضغط «اكتب الرد»."}</p>
+          <p className="muted">{busy ? "…" : "لسه مفيش رد. اضغط «اكتب الرد»."}</p>
         )}
       </div>
 
@@ -122,7 +128,7 @@ export default function ReplyPanel({ msg, entry }) {
           {copied ? "اتنسخ ✓" : "نسخ الرد"}
         </button>
         {wa && text && !busy ? (
-          <a className="btn btn-ghost" href={`https://wa.me/${wa}?text=${encodeURIComponent(text)}`} target="_blank" rel="noopener noreferrer">
+          <a className="btn btn-primary" href={`https://wa.me/${wa}?text=${encodeURIComponent(text)}`} target="_blank" rel="noopener noreferrer">
             افتح في واتساب
           </a>
         ) : (

@@ -4,11 +4,11 @@ import { usePathname } from "next/navigation";
 import { useApp } from "./AppProvider";
 
 const NAV = [
-  { href: "/", label: "اللوحة" },
+  { href: "/", label: "الرئيسية" },
   { href: "/inbox", label: "الرسايل" },
   { href: "/orders", label: "الأوردرات" },
+  { href: "/dashboard", label: "الأرقام" },
   { href: "/settings", label: "الإعدادات" },
-  { href: "/about", label: "عن خلّصانة" },
 ];
 
 export function AiBadge() {

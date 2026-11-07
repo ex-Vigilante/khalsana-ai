@@ -22,7 +22,7 @@ export default function About() {
         <p className="lead">رسايل الزباين تدخل… والأوردرات تطلع خلّصانة.</p>
         <p className="muted small" dir="ltr" lang="en">Customer messages in. Orders out — sorted.</p>
         <p>
-          <Link className="btn btn-primary" href="/inbox">جرّب على رسايل «بيت الكتان»</Link>
+          <Link className="btn btn-primary" href="/inbox?sample=1">جرّب على رسايل «بيت الكتان»</Link>
         </p>
       </div>
 

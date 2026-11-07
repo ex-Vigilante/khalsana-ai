@@ -371,3 +371,65 @@ select.miss { border-color: var(--warn-text); background: var(--warn-soft); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* ---------- home ---------- */
+.hero { padding-block: clamp(20px, 5vw, 48px) 8px; max-width: 760px; margin-inline: auto; text-align: center; display: grid; gap: 14px; justify-items: center; }
+.hero h1 { font-size: clamp(1.7rem, 1.2rem + 2.6vw, 2.8rem); color: var(--teal-text); line-height: 1.35; }
+.hero-sub { font-size: 1.1rem; color: var(--muted); margin: 0; max-width: 56ch; }
+.hero-cta { display: grid; gap: 6px; justify-items: center; margin-block: 6px; }
+.btn-xl { min-height: 56px; padding: 10px 32px; font-size: 1.2rem; border-radius: 12px; }
+.hero-sample { margin: 8px 0 0; width: 100%; text-align: start; display: grid; gap: 6px; }
+.hero-sample .bubble { font-size: 0.98rem; }
+.how { max-width: 900px; margin: 28px auto 8px; }
+.how h2 { margin-block-end: 12px; text-align: center; }
+.how-steps { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); }
+.how-steps li { display: flex; gap: 12px; align-items: flex-start; }
+.how-steps h3 { margin-block-end: 2px; }
+.how-steps p { margin: 0; color: var(--muted); font-size: 0.95rem; }
+.home-links { display: flex; flex-wrap: wrap; gap: 8px 20px; justify-content: center; margin-block: 20px 0; }
+
+/* ---------- AI marker, steps, highlights ---------- */
+.ai-mark { display: inline-flex; align-items: center; gap: 4px; padding: 0 8px; border-radius: 999px; border: 1px solid currentColor; font-size: 0.72rem; font-weight: 800; line-height: 1.7; color: var(--teal-text); background: var(--teal-soft); vertical-align: middle; white-space: nowrap; }
+.btn-primary .ai-mark { color: var(--primary-ink); background: transparent; }
+.step-chip { display: inline-grid; place-items: center; width: 1.6em; height: 1.6em; border-radius: 50%; background: var(--orange); color: var(--orange-ink); font-size: 0.85em; font-weight: 800; margin-inline-end: 4px; }
+.pane-title { margin-block-end: 8px; }
+.opts { margin-block-start: 12px; border: 1px dashed var(--line-strong); border-radius: 9px; padding: 6px 10px; }
+.opts > summary { cursor: pointer; font-weight: 600; font-size: 0.9rem; color: var(--muted); min-height: 32px; display: flex; align-items: center; }
+.opts[open] > summary { margin-block-end: 8px; }
+.opts .chan-tabs { margin-block-end: 6px; }
+.opts .paste { margin-block-start: 8px; }
+
+:root {
+  --hl-name: #bfe6df; --hl-name-line: #0f6e6a;
+  --hl-phone: #ffd8b5; --hl-phone-line: #b4540f;
+  --hl-area: #e3d4f6; --hl-area-line: #6b3fa0;
+  --hl-items: #f7e6a0; --hl-items-line: #8a6a00;
+}
+:root[data-theme="dark"] {
+  --hl-name: #1b4b46; --hl-name-line: #6fd3cc;
+  --hl-phone: #5a3720; --hl-phone-line: #f4a26e;
+  --hl-area: #43315f; --hl-area-line: #c3a2f0;
+  --hl-items: #54471a; --hl-items-line: #f2c75c;
+}
+mark.hl { color: inherit; padding: 1px 3px; border-radius: 4px; border-block-end-width: 2px; border-block-end-style: solid; }
+.hl-name { background: var(--hl-name); border-color: var(--hl-name-line); }
+.hl-phone { background: var(--hl-phone); border-color: var(--hl-phone-line); }
+.hl-area { background: var(--hl-area); border-color: var(--hl-area-line); }
+.hl-items { background: var(--hl-items); border-color: var(--hl-items-line); }
+mark.hl-phone { border-block-end-style: dotted; }
+mark.hl-area { border-block-end-style: dashed; }
+mark.hl-items { border-block-end-style: double; border-block-end-width: 3px; }
+.swatch { display: inline-block; width: 0.8em; height: 0.8em; border-radius: 3px; margin-inline-end: 6px; border: 2px solid; vertical-align: -0.05em; }
+.hl-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 0.85rem; color: var(--muted); }
+.saved { margin: 0; padding: 8px 12px; border-radius: 9px; background: var(--orange-soft); color: var(--orange-text); display: grid; gap: 2px; }
+.saved .muted { color: var(--orange-text); }
+
+/* phone: one step at a time */
+@media (max-width: 1099px) {
+  .inbox[data-tab="msg"] .step-reply { display: none; }
+  .inbox[data-tab="reply"] .step-msg { display: none; }
+  .pane-tabs button { font-size: 0.88rem; padding-inline: 4px; }
+}
+@media (min-width: 1100px) {
+  .mobile-next { display: none !important; }
+}
